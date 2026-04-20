@@ -494,3 +494,24 @@ class ExternKeeper:
         )
 
         return prms
+
+    def rotate(self, pre, verfers, digers, **kwargs):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError(f"Attempt to rotate nonexistent or invalid pre={pre}, algo={pp.algo if pp else 'None'}.")
+
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers], dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers], dt=dt),
+        )
+
+        if not self.rb.sits.pin(pre, val=ps):
+            raise ValueError(f"Error saving sit rotating pre={pre}.")
+
+        # Update extern params if pidx changed
+        if 'pidx' in kwargs:
+            extern_type = kwargs.get('extern_type', 'f310')
+            pidx = kwargs.get('pidx', 0)
+            params_key = f"extern.{pre}"
+            params_val = f"{extern_type}:{pidx}".encode('utf-8')
+            self.rb.gbls.pin(params_key, params_val)

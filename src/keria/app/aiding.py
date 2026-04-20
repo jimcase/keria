@@ -1148,6 +1148,19 @@ class IdentifierResourceEnd:
 
             return op
 
+        elif Algos.extern in body:
+            extern = body[Algos.extern]
+            try:
+                agent.rotateExtern(
+                    pre=serder.pre,
+                    verfers=serder.verfers,
+                    digers=serder.ndigers,
+                    **extern,
+                )
+            except ValueError as e:
+                agent.hby.deleteHab(name=name)
+                raise falcon.HTTPInternalServerError(description=f"{e.args[0]}")
+
         if hab.kever.delpre:
             agent.anchors.append(dict(alias=name, pre=hab.pre, sn=serder.sn))
             op = agent.monitor.submit(

@@ -881,6 +881,10 @@ class Agent(doing.DoDoer):
 
         self.agency.incept(self.caid, pre)
 
+    def rotateExtern(self, pre, verfers, digers, **kwargs):
+        keeper = self.mgr.get(Algos.extern)
+        keeper.rotate(pre=pre, verfers=verfers, digers=digers, **kwargs)
+
     def recur(self, tyme=None, tock=0.0):
         if self.shouldShutdown:
             self.shutdownAgent()  # will call exit so no need to return
