@@ -444,5 +444,74 @@ class ExternKeeper:
     def __init__(self, rb: RemoteKeeper):
         self.rb = rb
 
-    def incept(self, **kwargs):
-        pass
+    def incept(self, pre, verfers, digers, **kwargs):
+        pp = Prefix(algo=Algos.extern)
+
+        if not self.rb.pres.put(pre, val=pp):
+            raise ValueError("Already incepted pre={}.".format(pre))
+
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers], dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers], dt=dt),
+        )
+
+        if not self.rb.sits.put(pre, val=ps):
+            raise ValueError("Already incepted sit for pre={}.".format(pre))
+
+        # Save extern params using gbls sub database (persistent key-value store)
+        extern_type = kwargs.get('extern_type', 'f310')
+        pidx = kwargs.get('pidx', 0)
+        params_key = f"extern.{pre}"
+        params_val = f"{extern_type}:{pidx}".encode('utf-8')
+        self.rb.gbls.pin(params_key, params_val)
+
+    def params(self, pre):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError(f"Attempt to load nonexistent or invalid pre={pre}.")
+
+        if (ps := self.rb.sits.get(pre)) is None:
+            raise ValueError(f"Attempt to load invalid sit for pre={pre}.")
+
+        # Load extern params from gbls
+        params_key = f"extern.{pre}"
+        params_val = self.rb.gbls.get(params_key)
+        if params_val:
+            val = params_val.decode('utf-8') if isinstance(params_val, bytes) else params_val
+            extern_type, pidx = val.split(':')
+            pidx = int(pidx)
+        else:
+            extern_type = 'f310'
+            pidx = 0
+
+        prms = dict(
+            extern=dict(
+                extern_type=extern_type,
+                pidx=pidx,
+                keys=[pub for pub in ps.new.pubs],
+                ndigs=[pub for pub in ps.nxt.pubs],
+            )
+        )
+
+        return prms
+
+    def rotate(self, pre, verfers, digers, **kwargs):
+        if (pp := self.rb.pres.get(pre)) is None or pp.algo != Algos.extern:
+            raise ValueError(f"Attempt to rotate nonexistent or invalid pre={pre}, algo={pp.algo if pp else 'None'}.")
+
+        dt = helping.nowIso8601()
+        ps = PreSit(
+            new=PubLot(pubs=[verfer.qb64 for verfer in verfers], dt=dt),
+            nxt=PubLot(pubs=[diger.qb64 for diger in digers], dt=dt),
+        )
+
+        if not self.rb.sits.pin(pre, val=ps):
+            raise ValueError(f"Error saving sit rotating pre={pre}.")
+
+        # Update extern params if pidx changed
+        if 'pidx' in kwargs:
+            extern_type = kwargs.get('extern_type', 'f310')
+            pidx = kwargs.get('pidx', 0)
+            params_key = f"extern.{pre}"
+            params_val = f"{extern_type}:{pidx}".encode('utf-8')
+            self.rb.gbls.pin(params_key, params_val)
